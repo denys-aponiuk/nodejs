@@ -1,60 +1,20 @@
-const http = require("http");
+const { request } = require('express');
+const express = require('express');
+const bodyParser = require('body-parser');
+const path = require('path');
 
-const routes = require("./routes");
+const app = express();
+const adminRoutes = require('./routes/admin');
+const shopRoutes = require('./routes/shop');
 
-const users = ["User1"];
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-const factory = (user) => {
-  return `<li>${user}</li>`;
-};
+app.use('/admin', adminRoutes);
+app.use(shopRoutes);
 
-const server = http.createServer((req, res) => {
-  const url = req.url;
-  if (url === "/") {
-    res.setHeader("Content-Type", "text/html");
-
-    const html = `
-      <html>
-        <body>
-          <p>hello a user</p>
-
-          <form method="POST" action="/create-user">
-            <input type="text" name="username" />
-          </form>
-        </body>
-      </html>
-    `;
-    res.write(html);
-
-    res.end();
-  }
-
-  if (url === "/users") {
-    res.setHeader("Content-Type", "text/html");
-    res.write("<html>");
-    res.write(`<body><ul>${users.map(factory)}</ul></body>`);
-    res.end();
-  }
-
-  if (url === "/create-user") {
-    const body = [];
-    req.on("data", (chunk) => {
-      console.log(chunk);
-      body.push(chunk);
-    });
-    req.on("end", () => {
-      const parsedBody = Buffer.concat(body).toString();
-
-      users.push(parsedBody.split("=")[1]);
-      res.statusCode = 302;
-      res.setHeader("Location", "/users");
-      res.end();
-    });
-  }
-
-  if (url === "/favicon.ico") {
-    res.end();
-  }
+app.use((req, res, next) => {
+    res.status(404).sendFile(path.join(__dirname, 'views', '404.html'));
 });
 
-server.listen(3000);
+app.listen(3000);
